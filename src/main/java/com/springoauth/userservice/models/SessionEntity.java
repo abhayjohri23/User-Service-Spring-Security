@@ -6,8 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Time;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import static jakarta.persistence.GenerationType.AUTO;
@@ -22,8 +22,8 @@ public class SessionEntity extends BaseEntity{
     @JoinColumn(name = "userId")
     private UserEntity userEntity;
 
-    private Date dateOfIssuance;
-    private Time timeOfIssuance;
+    private LocalDate dateOfIssuance;
+    private LocalTime timeOfIssuance;
 
     @GeneratedValue(strategy = AUTO)
     private UUID sessionToken;

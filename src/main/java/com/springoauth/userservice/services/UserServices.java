@@ -9,14 +9,14 @@ import com.springoauth.userservice.models.SessionEntity;
 import com.springoauth.userservice.models.UserEntity;
 import com.springoauth.userservice.repository.SessionRepository;
 import com.springoauth.userservice.repository.UserRepository;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Date;
+import java.time.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 @Service
@@ -64,20 +64,36 @@ public class UserServices {
         List<SessionEntity> listOfSessionsRegistered
                 = this.sessionRepository.countByUserEntity(optionalUser.get().getEntityId());
 
-        List<DateTimeDTO> listOfLastLogins = new ArrayList<>();
-        for (SessionEntity sessionEntity : listOfSessionsRegistered) {
-            listOfLastLogins.add(new DateTimeDTO(sessionEntity.getDateOfIssuance(), sessionEntity.getTimeOfIssuance()));
+
+        if(listOfSessionsRegistered.size() == 3){
+            List<DateTimeDTO> listOfLastLogins = new ArrayList<>();
+            for (SessionEntity sessionEntity : listOfSessionsRegistered) {
+                listOfLastLogins.add(new DateTimeDTO(sessionEntity.getDateOfIssuance(), sessionEntity.getTimeOfIssuance()));
+            }
+
+            throw new IllegalUserSessionException("Session Limit exceeded",listOfLastLogins);
         }
 
-        if(listOfSessionsRegistered.size() == 3)
-            throw new IllegalUserSessionException("Session Limit exceeded",listOfLastLogins);
-
         //Pending-state: Register the user session in sessions table, with current date and time.
-        return null;
+        UserEntity currentUserEntity = optionalUser.get();
+        SessionEntity currentSessionEntity =
+            this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),LocalTime.now(), UUID.randomUUID()));
+
+        return new SessionDTO(currentSessionEntity.getSessionToken(),currentSessionEntity.getDateOfIssuance(),currentSessionEntity.getTimeOfIssuance());
     }
 
-    public UserDTO signOut(UserDTO userDTO){
-        return null;
+    public UserDTO signOut(UserDTO userDTO) throws IllegalUserFormatException, IllegalUserSessionException{
+        if(userDTO == null)     throw new IllegalUserFormatException("Illegal user request body found.");
+
+        Optional<UserEntity> optionalUser = this.userRepository.findByUsernameEqualsIgnoreCase(userDTO.getUsername());
+        if(optionalUser.isEmpty())        throw new IllegalUserFormatException("User doesn't exist in the repository!");
+
+        List<SessionEntity> listOfSessionsRegistered
+                = this.sessionRepository.countByUserEntity(optionalUser.get().getEntityId());
+        SessionEntity lastSession = listOfSessionsRegistered.get(listOfSessionsRegistered.size()-1);
+
+        this.sessionRepository.deleteBySessionTokenAndUserEntity(lastSession.getSessionToken(),lastSession.getUserEntity());
+        return getUserDTOFromUserEntity(optionalUser.get());
     }
 
     private String getBCryptPassword(String text){

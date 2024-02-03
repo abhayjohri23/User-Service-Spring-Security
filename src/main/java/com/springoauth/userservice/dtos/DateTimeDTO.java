@@ -4,13 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Time;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @Setter
 @AllArgsConstructor
 public class DateTimeDTO {
-    private Date dateOfSession;
-    private Time timeOfSession;
+    private LocalDate dateOfSession;
+    private LocalTime timeOfSession;
 }

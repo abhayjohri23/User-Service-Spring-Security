@@ -5,12 +5,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class SessionDTO {
-    private String sessionToken;
-    private String dateOfSessionRegistered;
-    private String timeOfSessionRegistered;
+    private UUID sessionToken;
+    private LocalDate dateOfSessionRegistered;
+    private LocalTime timeOfSessionRegistered;
 }

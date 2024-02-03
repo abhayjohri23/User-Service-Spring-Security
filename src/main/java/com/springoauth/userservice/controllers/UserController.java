@@ -29,7 +29,7 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public UserDTO signOut(@RequestBody UserDTO userDTO){
+    public UserDTO signOut(@RequestBody UserDTO userDTO) throws IllegalUserFormatException, IllegalUserSessionException{
         return this.userServices.signOut(userDTO);
     }
 }
