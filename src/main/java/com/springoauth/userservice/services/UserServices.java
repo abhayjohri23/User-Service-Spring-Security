@@ -64,6 +64,10 @@ public class UserServices {
         List<SessionEntity> listOfSessionsRegistered
                 = this.sessionRepository.countByUserEntity(optionalUser.get().getEntityId());
 
+        UserEntity currentUserEntity = optionalUser.get();
+
+        if(!this.isPasswordMatching(userDTO.getPassword(),currentUserEntity.getBcryptPassword()))
+            throw new IllegalUserFormatException("Password did not match");
 
         if(listOfSessionsRegistered.size() == 3){
             List<DateTimeDTO> listOfLastLogins = new ArrayList<>();
@@ -75,7 +79,6 @@ public class UserServices {
         }
 
         //Pending-state: Register the user session in sessions table, with current date and time.
-        UserEntity currentUserEntity = optionalUser.get();
         SessionEntity currentSessionEntity =
             this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),LocalTime.now(), UUID.randomUUID()));
 
@@ -99,5 +102,10 @@ public class UserServices {
     private String getBCryptPassword(String text){
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         return passwordEncoder.encode(text);
+    }
+
+    private boolean isPasswordMatching(String password,String bcryptPassword){
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        return passwordEncoder.matches(password,bcryptPassword);
     }
 }
