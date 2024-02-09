@@ -61,13 +61,13 @@ public class UserServices {
         Optional<UserEntity> optionalUser = this.userRepository.findByUsernameEqualsIgnoreCase(userDTO.getUsername());
         if(optionalUser.isEmpty())        throw new IllegalUserFormatException("User doesn't exist in the repository!");
 
-        List<SessionEntity> listOfSessionsRegistered
-                = this.sessionRepository.countByUserEntity(optionalUser.get().getEntityId());
-
         UserEntity currentUserEntity = optionalUser.get();
 
         if(!this.isPasswordMatching(userDTO.getPassword(),currentUserEntity.getBcryptPassword()))
             throw new IllegalUserFormatException("Password did not match");
+
+        List<SessionEntity> listOfSessionsRegistered
+                = this.sessionRepository.countByUserEntity(optionalUser.get().getEntityId());
 
         if(listOfSessionsRegistered.size() == 3){
             List<DateTimeDTO> listOfLastLogins = new ArrayList<>();
