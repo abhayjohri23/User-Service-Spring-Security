@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -16,5 +17,8 @@ public interface SessionRepository extends JpaRepository<SessionEntity,Long> {
     List<SessionEntity> countByUserEntity(Long userId);
 
     //Sign Out: By Session Token, we can delete the session entry and return the session details of the deleted tuple.
-    void deleteBySessionTokenAndUserEntity(UUID sessionToken, UserEntity userEntity);
+//    void deleteBySessionTokenAndUserEntity(UUID sessionToken, UserEntity userEntity);
+
+    Optional<SessionEntity> findByUserEntityAndAndToken(UserEntity userEntity, String token);
+    Optional<SessionEntity> findByToken(String token);
 }

@@ -25,6 +25,6 @@ public class SessionEntity extends BaseEntity{
     private LocalDate dateOfIssuance;
     private LocalTime timeOfIssuance;
 
-    @GeneratedValue(strategy = AUTO)
-    private UUID sessionToken;
+    private String token;
+    private int sessionStatus;
 }

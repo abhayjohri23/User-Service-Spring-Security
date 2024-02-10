@@ -4,7 +4,8 @@ CREATE TABLE sessions
     user_id          BIGINT NULL,
     date_of_issuance date NULL,
     time_of_issuance time NULL,
-    session_token    BINARY(16) NULL,
+    token            VARCHAR(255) NULL,
+    session_status   INT    NOT NULL,
     CONSTRAINT pk_sessions PRIMARY KEY (entity_id)
 );
 

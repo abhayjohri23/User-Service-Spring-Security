@@ -12,17 +12,23 @@ import com.springoauth.userservice.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.time.*;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.*;
+
+import io.jsonwebtoken.Jwts;
+
+import javax.crypto.SecretKey;
+
 
 @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 @Service
 public class UserServices {
     private final UserRepository userRepository;
     private final SessionRepository sessionRepository;
+    private static final SecretKey authSecretKey = Jwts.SIG.HS256.key().build();
     public UserServices(UserRepository userRepository,SessionRepository sessionRepository){
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
@@ -79,24 +85,59 @@ public class UserServices {
         }
 
         //Pending-state: Register the user session in sessions table, with current date and time.
-        SessionEntity currentSessionEntity =
-            this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),LocalTime.now(), UUID.randomUUID()));
+//        SessionEntity currentSessionEntity =
+//            this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),LocalTime.now(), UUID.randomUUID()));
+//
+//        return new SessionDTO(currentSessionEntity.getSessionToken(),currentSessionEntity.getDateOfIssuance(),currentSessionEntity.getTimeOfIssuance());
+        Map<String,Object> jsonPayloadMap = new HashMap<>();
+        jsonPayloadMap.put("username",userDTO.getUsername());
+        jsonPayloadMap.put("dateOfSessionRegistration", new Date());
+        jsonPayloadMap.put("timeOfSessionRegistered", Instant.now());
 
-        return new SessionDTO(currentSessionEntity.getSessionToken(),currentSessionEntity.getDateOfIssuance(),currentSessionEntity.getTimeOfIssuance());
+        String authTokenGenerated = Jwts.builder()
+                .claims(jsonPayloadMap).signWith(authSecretKey).compact();
+        SessionEntity sessionGenerated = this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),LocalTime.now(),authTokenGenerated, 0));
+
+        return SessionDTO.builder()
+                .sessionToken(sessionGenerated.getToken())
+                .dateOfSessionRegistered(sessionGenerated.getDateOfIssuance())
+                .timeOfSessionRegistered(sessionGenerated.getTimeOfIssuance())
+                .build();
     }
 
-    public UserDTO signOut(UserDTO userDTO) throws IllegalUserFormatException, IllegalUserSessionException{
-        if(userDTO == null)     throw new IllegalUserFormatException("Illegal user request body found.");
+    public boolean signOut(UserDTO userDTO,String authHeaderToken) throws IllegalUserFormatException, IllegalUserSessionException{
+        if(userDTO == null)                     throw new IllegalUserFormatException("Illegal user request body found.");
+        if(authHeaderToken == null)             throw new IllegalUserFormatException("No header auth token found");
 
         Optional<UserEntity> optionalUser = this.userRepository.findByUsernameEqualsIgnoreCase(userDTO.getUsername());
-        if(optionalUser.isEmpty())        throw new IllegalUserFormatException("User doesn't exist in the repository!");
+        if(optionalUser.isEmpty())              throw new IllegalUserFormatException("User doesn't exist in the repository!");
 
-        List<SessionEntity> listOfSessionsRegistered
-                = this.sessionRepository.countByUserEntity(optionalUser.get().getEntityId());
-        SessionEntity lastSession = listOfSessionsRegistered.get(listOfSessionsRegistered.size()-1);
+        UserEntity currentUser = optionalUser.get();
+        Optional<SessionEntity> optionalSessionEntity = this.sessionRepository.findByUserEntityAndAndToken(currentUser,authHeaderToken);
 
-        this.sessionRepository.deleteBySessionTokenAndUserEntity(lastSession.getSessionToken(),lastSession.getUserEntity());
-        return getUserDTOFromUserEntity(optionalUser.get());
+        if(optionalSessionEntity.isEmpty())     throw new IllegalUserSessionException("Username and token do not match");
+        SessionEntity sessionEntity = optionalSessionEntity.get();
+
+        sessionEntity.setSessionStatus(1);
+        this.sessionRepository.save(sessionEntity);
+
+//        List<SessionEntity> listOfSessionsRegistered
+//                = this.sessionRepository.countByUserEntity(currentUser.getEntityId());
+//        SessionEntity lastSession = listOfSessionsRegistered.get(listOfSessionsRegistered.size()-1);
+
+//        this.sessionRepository.deleteBySessionTokenAndUserEntity(lastSession.getSessionToken(),lastSession.getUserEntity());
+
+        return true;
+    }
+
+    public int validate(String authHeaderToken) throws IllegalUserSessionException{
+        if(authHeaderToken == null)     throw new IllegalUserSessionException("Authentication Header Token not found!");
+
+        Optional<SessionEntity> optionalSessionEntity = this.sessionRepository.findByToken(authHeaderToken);
+        if(optionalSessionEntity.isEmpty())     throw new IllegalUserSessionException("No session token found!");
+
+        SessionEntity sessionEntity = optionalSessionEntity.get();
+        return sessionEntity.getSessionStatus();
     }
 
     private String getBCryptPassword(String text){

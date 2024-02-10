@@ -1,9 +1,6 @@
 package com.springoauth.userservice.dtos;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,8 +10,9 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class SessionDTO {
-    private UUID sessionToken;
+    private String sessionToken;
     private LocalDate dateOfSessionRegistered;
     private LocalTime timeOfSessionRegistered;
 }
