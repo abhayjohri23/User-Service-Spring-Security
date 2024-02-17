@@ -89,14 +89,18 @@ public class UserServices {
 //            this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),LocalTime.now(), UUID.randomUUID()));
 //
 //        return new SessionDTO(currentSessionEntity.getSessionToken(),currentSessionEntity.getDateOfIssuance(),currentSessionEntity.getTimeOfIssuance());
-        Map<String,Object> jsonPayloadMap = new HashMap<>();
-        jsonPayloadMap.put("username",userDTO.getUsername());
-        jsonPayloadMap.put("dateOfSessionRegistration", new Date());
-        jsonPayloadMap.put("timeOfSessionRegistered", Instant.now());
+
+        /*A way to create JSON - Create Map with key,values pairs and then creating claims out of them. Compact means stringify the claim.*/
+
+        Map<String, Object> jsonPayloadMap = new HashMap<>();
+        jsonPayloadMap.put("username", userDTO.getUsername());
+        jsonPayloadMap.put("dateOfSessionRegistration", String.valueOf(LocalDate.now()));
+        LocalTime currTime = LocalTime.now();
+        jsonPayloadMap.put("timeOfSessionRegistered", String.valueOf(currTime));
 
         String authTokenGenerated = Jwts.builder()
                 .claims(jsonPayloadMap).signWith(authSecretKey).compact();
-        SessionEntity sessionGenerated = this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),LocalTime.now(),authTokenGenerated, 0));
+        SessionEntity sessionGenerated = this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),currTime,authTokenGenerated, 0));
 
         return SessionDTO.builder()
                 .sessionToken(sessionGenerated.getToken())
