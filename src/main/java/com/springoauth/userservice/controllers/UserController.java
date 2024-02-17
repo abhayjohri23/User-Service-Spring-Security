@@ -38,8 +38,8 @@ public class UserController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<Integer> validate(@RequestHeader(AUTHORIZATION) String authHeaderToken) throws IllegalUserSessionException{
-        int sessionStatus = this.userServices.validate(authHeaderToken);
-        return new ResponseEntity<Integer>(sessionStatus,(sessionStatus == 0) ? HttpStatus.ACCEPTED : HttpStatus.NOT_ACCEPTABLE);
+    public ResponseEntity<Integer> validate(@RequestHeader(AUTHORIZATION) String authHeaderToken,@RequestBody UserDTO userDTO) throws IllegalUserSessionException{
+        int sessionStatus = this.userServices.validate(authHeaderToken, userDTO.getUsername());
+        return new ResponseEntity<Integer>(sessionStatus,(sessionStatus == 0) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE);
     }
 }

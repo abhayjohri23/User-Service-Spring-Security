@@ -9,6 +9,8 @@ import com.springoauth.userservice.models.SessionEntity;
 import com.springoauth.userservice.models.UserEntity;
 import com.springoauth.userservice.repository.SessionRepository;
 import com.springoauth.userservice.repository.UserRepository;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -143,13 +145,17 @@ public class UserServices {
         return ResponseEntity.ok().body(true);
     }
 
-    public int validate(String authHeaderToken) throws IllegalUserSessionException{
+    public int validate(String authHeaderToken,String username) throws IllegalUserSessionException{
         if(authHeaderToken == null)     throw new IllegalUserSessionException("Authentication Header Token not found!");
 
         Optional<SessionEntity> optionalSessionEntity = this.sessionRepository.findByToken(authHeaderToken);
         if(optionalSessionEntity.isEmpty())     throw new IllegalUserSessionException("No session token found!");
 
         SessionEntity sessionEntity = optionalSessionEntity.get();
+        Jws<Claims> jwsClaims = Jwts.parser().verifyWith(authSecretKey).build().parseSignedClaims(authHeaderToken);
+        String sessionUser = jwsClaims.getPayload().get("username").toString();
+
+        if(!sessionUser.equalsIgnoreCase(username))     throw new IllegalUserSessionException("Username for the session generated, is not matching");
         return sessionEntity.getSessionStatus();
     }
 
