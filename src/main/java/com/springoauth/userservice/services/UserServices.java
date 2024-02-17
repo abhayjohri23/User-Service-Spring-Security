@@ -9,6 +9,8 @@ import com.springoauth.userservice.models.SessionEntity;
 import com.springoauth.userservice.models.UserEntity;
 import com.springoauth.userservice.repository.SessionRepository;
 import com.springoauth.userservice.repository.UserRepository;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -60,7 +62,7 @@ public class UserServices {
         return userDTO;
     }
 
-    public SessionDTO signIn(UserDTO userDTO) throws IllegalUserFormatException, IllegalUserSessionException {
+    public ResponseEntity<SessionDTO> signIn(UserDTO userDTO) throws IllegalUserFormatException, IllegalUserSessionException {
         if(userDTO == null)
             throw new IllegalUserFormatException("Illegal user request body found.");
 
@@ -102,14 +104,20 @@ public class UserServices {
                 .claims(jsonPayloadMap).signWith(authSecretKey).compact();
         SessionEntity sessionGenerated = this.sessionRepository.save(new SessionEntity(currentUserEntity,LocalDate.now(),currTime,authTokenGenerated, 0));
 
-        return SessionDTO.builder()
-                .sessionToken(sessionGenerated.getToken())
-                .dateOfSessionRegistered(sessionGenerated.getDateOfIssuance())
-                .timeOfSessionRegistered(sessionGenerated.getTimeOfIssuance())
-                .build();
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.set(HttpHeaders.SET_COOKIE,"auth-token: "+authTokenGenerated);
+
+        return ResponseEntity.ok()
+                .headers(httpHeaders)
+                .body(
+                        SessionDTO.builder()
+                                .timeOfSessionRegistered(sessionGenerated.getTimeOfIssuance())
+                                .dateOfSessionRegistered(sessionGenerated.getDateOfIssuance())
+                                .sessionToken(sessionGenerated.getToken())
+                                .build());
     }
 
-    public boolean signOut(UserDTO userDTO,String authHeaderToken) throws IllegalUserFormatException, IllegalUserSessionException{
+    public ResponseEntity<Boolean> signOut(UserDTO userDTO,String authHeaderToken) throws IllegalUserFormatException, IllegalUserSessionException{
         if(userDTO == null)                     throw new IllegalUserFormatException("Illegal user request body found.");
         if(authHeaderToken == null)             throw new IllegalUserFormatException("No header auth token found");
 
@@ -132,7 +140,7 @@ public class UserServices {
 
 //        this.sessionRepository.deleteBySessionTokenAndUserEntity(lastSession.getSessionToken(),lastSession.getUserEntity());
 
-        return true;
+        return ResponseEntity.ok().body(true);
     }
 
     public int validate(String authHeaderToken) throws IllegalUserSessionException{

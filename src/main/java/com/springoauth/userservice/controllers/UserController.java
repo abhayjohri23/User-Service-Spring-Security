@@ -25,13 +25,16 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public SessionDTO signIn(@RequestBody UserDTO userDTO) throws IllegalUserFormatException, IllegalUserSessionException {
+    public ResponseEntity<SessionDTO> signIn(@RequestBody UserDTO userDTO) throws IllegalUserFormatException, IllegalUserSessionException {
         return this.userServices.signIn(userDTO);
     }
     @PostMapping("/logout")
     public ResponseEntity<String> signOut(@RequestBody UserDTO userDTO, @RequestHeader(AUTHORIZATION) String authToken) throws IllegalUserFormatException, IllegalUserSessionException{
-        boolean res = this.userServices.signOut(userDTO,authToken);
-        return new ResponseEntity<String>(userDTO.getUsername() + " logged out successfully!",HttpStatus.OK);
+        ResponseEntity<Boolean> responseEntity = this.userServices.signOut(userDTO,authToken);
+        if(Boolean.FALSE.equals(responseEntity.getBody()))
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(userDTO.getUsername() +" was not logged out!");
+        else
+            return new ResponseEntity<String>(userDTO.getUsername() + " logged out successfully!",HttpStatus.OK);
     }
 
     @GetMapping("/validate")
