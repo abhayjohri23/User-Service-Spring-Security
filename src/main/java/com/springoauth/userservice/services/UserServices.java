@@ -125,6 +125,7 @@ public class UserServices {
         sessionEntity.setSessionStatus(1);
         this.sessionRepository.save(sessionEntity);
 
+
 //        List<SessionEntity> listOfSessionsRegistered
 //                = this.sessionRepository.countByUserEntity(currentUser.getEntityId());
 //        SessionEntity lastSession = listOfSessionsRegistered.get(listOfSessionsRegistered.size()-1);
